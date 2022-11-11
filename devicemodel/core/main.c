@@ -202,9 +202,9 @@ static void outdate(char *msg)
 static void
 print_version(void)
 {
-	fprintf(stdout, "DM version is: %s-%s (daily tag:%s), build by %s@%s\n",
+	fprintf(stdout, "Version: %s, build by %s@%s\n",
 			DM_FULL_VERSION,
-			DM_BUILD_VERSION, DM_DAILY_TAG, DM_BUILD_USER, DM_BUILD_TIME);
+			DM_BUILD_USER, DM_BUILD_TIME);
 
 	exit(0);
 }
