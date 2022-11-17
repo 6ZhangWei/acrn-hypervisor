@@ -1,0 +1,115 @@
+From 889235e5cda51a7417655f024fa0d6cd8e9af551 Mon Sep 17 00:00:00 2001
+From: Victor Sun <victor.sun@intel.com>
+Date: Tue, 24 May 2022 17:31:57 +0800
+Subject: [PATCH] HV:debug:enable hv console in service vm
+
+Signed-off-by: Victor Sun <victor.sun@intel.com>
+---
+ hypervisor/arch/x86/guest/vm.c |  2 +-
+ hypervisor/debug/console.c     | 33 ++++++++++++++++++++++++++++++---
+ hypervisor/dm/vuart.c          |  9 +++++++++
+ hypervisor/include/dm/vuart.h  |  2 +-
+ 4 files changed, 41 insertions(+), 5 deletions(-)
+
+diff --git a/hypervisor/arch/x86/guest/vm.c b/hypervisor/arch/x86/guest/vm.c
+index aff477abb..7a790311c 100644
+--- a/hypervisor/arch/x86/guest/vm.c
++++ b/hypervisor/arch/x86/guest/vm.c
+@@ -284,7 +284,7 @@ struct acrn_vm *get_vm_from_vmid(uint16_t vm_id)
+ /* return a pointer to the virtual machine structure of Service VM */
+ struct acrn_vm *get_service_vm(void)
+ {
+-	ASSERT(service_vm_ptr != NULL, "service_vm_ptr is NULL");
++//	ASSERT(service_vm_ptr != NULL, "service_vm_ptr is NULL");
+ 
+ 	return service_vm_ptr;
+ }
+diff --git a/hypervisor/debug/console.c b/hypervisor/debug/console.c
+index dd21b5b40..f85476ea4 100644
+--- a/hypervisor/debug/console.c
++++ b/hypervisor/debug/console.c
+@@ -64,18 +64,45 @@ void console_init(void)
+ 
+ void console_putc(const char *ch)
+ {
+-	(void)uart16550_puts(ch, 1U);
++	(void)console_write(ch, 1U);
++	//(void)uart16550_puts(ch, 1U);
+ }
+ 
+-
+ size_t console_write(const char *s, size_t len)
+ {
++	uint32_t i;
++	struct acrn_vm *vm = get_service_vm();
++
++	if (is_service_vm(vm)) {
++		struct acrn_vuart *vu = &vm->vuart[2];
++
++		if (vu->active) {
++			for (i = 0U; i < len; i++) {
++				vuart_putchar(vu, *(s+i));
++				if (*(s+i) == '\n') {
++					/* Append '\r', no need change the len */
++					vuart_putchar(vu, '\r');
++				}
++			}
++			vuart_toggle_intr(vu);
++		}
++	}
++//return len;
+ 	return  uart16550_puts(s, len);
+ }
+ 
+ char console_getc(void)
+ {
+-	return uart16550_getc();
++	struct acrn_vm *vm = get_service_vm();
++	char c = -1;
++
++	if (is_service_vm(vm)) {
++		struct acrn_vuart *vu = &vm->vuart[2];
++
++		if (vu->active)
++			c = vuart_getchar(vu);
++	}
++	return (c == -1) ? uart16550_getc() : c;
+ }
+ 
+ /*
+diff --git a/hypervisor/dm/vuart.c b/hypervisor/dm/vuart.c
+index b362f23b2..99ee72692 100644
+--- a/hypervisor/dm/vuart.c
++++ b/hypervisor/dm/vuart.c
+@@ -665,6 +665,15 @@ void init_legacy_vuarts(struct acrn_vm *vm, const struct vuart_config *vu_config
+ 			}
+ 		}
+ 	}
++	if (is_service_vm(vm)) {
++		vu = &vm->vuart[2];
++		setup_vuart(vm, 2);
++		vu->port_base = 0x3E8;
++		vu->irq = 6;
++		if (vuart_register_io_handler(vm, vu->port_base, 2) != 0U) {
++			vu->active = true;
++		}
++	}
+ }
+ 
+ void deinit_legacy_vuarts(struct acrn_vm *vm)
+diff --git a/hypervisor/include/dm/vuart.h b/hypervisor/include/dm/vuart.h
+index 23865ac05..50570a46a 100644
+--- a/hypervisor/include/dm/vuart.h
++++ b/hypervisor/include/dm/vuart.h
+@@ -32,7 +32,7 @@
+ #include <asm/lib/spinlock.h>
+ #include <asm/vm_config.h>
+ 
+-#define RX_BUF_SIZE		256U
++#define RX_BUF_SIZE		8192U
+ #define TX_BUF_SIZE		8192U
+ #define INVAILD_VUART_IDX	0xFFU
+ 
+-- 
+2.25.1
+

@@ -481,7 +481,7 @@ void shell_kick(void)
 	}
 
 	/* Get user's input */
-	is_cmd_cmplt = shell_input_line();
+	is_cmd_cmplt = shell_input_line();  //zw. here 
 
 	/* If user has pressed the ENTER then process
 	 * the command
