@@ -317,7 +317,7 @@ static void init_exec_ctrl(struct acrn_vcpu *vcpu)
 	/*
 	 * Enable MONITOR/MWAIT cause a VM-EXIT.
 	 */
-	value32 |= VMX_PROCBASED_CTLS_MWAIT | VMX_PROCBASED_CTLS_MONITOR;
+	// value32 |= VMX_PROCBASED_CTLS_MWAIT | VMX_PROCBASED_CTLS_MONITOR;
 
 	vcpu->arch.proc_vm_exec_ctrls = value32;
 	exec_vmwrite32(VMX_PROC_VM_EXEC_CONTROLS, value32);

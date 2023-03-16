@@ -151,8 +151,9 @@ bool is_lapic_pt_configured(const struct acrn_vm *vm)
  */
 bool is_pmu_pt_configured(const struct acrn_vm *vm)
 {
+	
 	struct acrn_vm_config *vm_config = get_vm_config(vm->vm_id);
-
+	return true;
 	return ((vm_config->guest_flags & GUEST_FLAG_PMU_PASSTHROUGH) != 0U);
 }
 

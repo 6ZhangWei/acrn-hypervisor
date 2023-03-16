@@ -821,7 +821,7 @@ int32_t rdmsr_vmexit_handler(struct acrn_vcpu *vcpu)
 			 */
 			err = read_vmx_msr(vcpu, msr, &v);
 		} else {
-			if (msr != 0x122 && msr != 0x10F && msr != 0x123 && (msr < 0xc0001fffU) && msr != 0x66a) {
+			if ( (msr < 0xC00 )&&(msr != 0xC98 && msr != 0xC94 &&  msr != 0xCA0 && msr != 0xCD0 && msr != 0xCB0) && msr != 0x61c &&  msr != 0x122 && msr != 0x10F && msr != 0x123 && (msr < 0xc0001fffU) && msr != 0x66a) {
 				v = msr_read(msr);
 				pt = 1;
 			} else {
@@ -833,7 +833,7 @@ int32_t rdmsr_vmexit_handler(struct acrn_vcpu *vcpu)
 	}
 	}
 
-	if (pt) {
+	if (pt && 0) {
 		pr_fatal("%s(): vm%d vcpu%d reading passthrough MSR %lx, v: 0x%llx",
 				__func__, vcpu->vm->vm_id, vcpu->vcpu_id, msr, v);
 	}
@@ -1219,7 +1219,8 @@ int32_t wrmsr_vmexit_handler(struct acrn_vcpu *vcpu)
 		if (is_x2apic_msr(msr)) {
 			err = vlapic_x2apic_write(vcpu, msr, v);
 		} else {
-			if (msr != 0x122 && msr != 0x10F && msr != 0x123 && (msr < 0xc0001fffU) && msr != 0x66a) {
+			//() 0xCD0 for board_inspector
+			if ((msr != 0xCD0)  &&  msr != 0x61c &&  msr != 0x122 && msr != 0x10F && msr != 0x123 && (msr < 0xc0001fffU) && msr != 0x66a) {
 				msr_write(msr, v);
 				pt = 1;
 			} else {
@@ -1230,7 +1231,7 @@ int32_t wrmsr_vmexit_handler(struct acrn_vcpu *vcpu)
 	}
 	}
 
-	if (pt) {
+	if (pt && 0) {
 		pr_fatal("%s(): vm%d vcpu%d writing passthrough MSR %lx, v: 0x%llx",
 				__func__, vcpu->vm->vm_id, vcpu->vcpu_id, msr, v);
 	} 
