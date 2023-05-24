@@ -499,6 +499,31 @@ void init_msr_emulation(struct acrn_vcpu *vcpu)
 	uint32_t msr, i;
 	uint64_t value64;
 
+	for (i = 0U; i < 0x1FFFU; i++) {
+		/* 0x48 and 0x49 may not been pass-thru */
+		if (i != 0x48 && i != 0x49 &&
+		/* the IA32_SYSENTER_CS (174H), IA32_SYSENTER_ESP (175H), and IA32_SYSENTER_EIP (176H)
+		 * MSRs are saved into the corresponding fields.
+		 */
+			i != 0x174 && i != 0x175 && i != 0x176)
+		enable_msr_interception(msr_bitmap, i, INTERCEPT_READ_WRITE);
+	}
+
+	for (i = 0U; i < 0x1FFFU; i++) {
+		/* ACRN Hypervisor doesn't use these logical processor scope MSRs,
+		 * we could pass-thru them to Guest and save/restore them when vmexit
+		 * from a vm and vmenter to another vm.
+		 */
+		if ((0xc0000000U + i) != MSR_IA32_FS_BASE &&
+			(0xc0000000U + i) != MSR_IA32_GS_BASE &&
+			/* Need we save/restore */
+			(0xc0000000U + i) !=  MSR_IA32_STAR &&
+			(0xc0000000U + i) !=  MSR_IA32_LSTAR &&
+			(0xc0000000U + i) !=  MSR_IA32_FMASK &&
+			(0xc0000000U + i) !=  MSR_IA32_KERNEL_GS_BASE)
+		enable_msr_interception(msr_bitmap, 0xc0000000U + i, INTERCEPT_READ_WRITE);
+	}
+
 	for (i = 0U; i < NUM_EMULATED_MSRS; i++) {
 		enable_msr_interception(msr_bitmap, emulated_guest_msrs[i], INTERCEPT_READ_WRITE);
 	}
@@ -613,6 +638,7 @@ int32_t rdmsr_vmexit_handler(struct acrn_vcpu *vcpu)
 	int32_t err = 0;
 	uint32_t msr;
 	uint64_t v = 0UL;
+	int32_t pt = 0;
 
 	/* Read the msr value */
 	msr = (uint32_t)vcpu_get_gpreg(vcpu, CPU_REG_RCX);
@@ -795,19 +821,34 @@ int32_t rdmsr_vmexit_handler(struct acrn_vcpu *vcpu)
 			 */
 			err = read_vmx_msr(vcpu, msr, &v);
 		} else {
-			pr_warn("%s(): vm%d vcpu%d reading MSR %lx not supported",
-				__func__, vcpu->vm->vm_id, vcpu->vcpu_id, msr);
-			err = -EACCES;
-			v = 0UL;
+			if (msr != 0x122 && msr != 0x10F && msr != 0x123 && (msr < 0xc0001fffU) && msr != 0x66a) {
+				v = msr_read(msr);
+				pt = 1;
+			} else {
+				err = -EACCES;
+				v = 0UL;
+			}
 		}
 		break;
 	}
 	}
 
+	if (pt) {
+		pr_fatal("%s(): vm%d vcpu%d reading passthrough MSR %lx, v: 0x%llx",
+				__func__, vcpu->vm->vm_id, vcpu->vcpu_id, msr, v);
+	}
+	// else {
+	// 	pr_fatal("%s(): vm%d vcpu%d reading emulated MSR %lx, v: 0x%llx",
+	// 			__func__, vcpu->vm->vm_id, vcpu->vcpu_id, msr, v);
+	// }
+
 	if (err == 0) {
 		/* Store the MSR contents in RAX and RDX */
 		vcpu_set_gpreg(vcpu, CPU_REG_RAX, v & 0xffffffffU);
 		vcpu_set_gpreg(vcpu, CPU_REG_RDX, v >> 32U);
+	} else {
+		pr_err("%s(): vm%d vcpu%d reading MSR %lx not supported",
+				__func__, vcpu->vm->vm_id, vcpu->vcpu_id, msr);
 	}
 
 	TRACE_2L(TRACE_VMEXIT_RDMSR, msr, v);
@@ -965,6 +1006,7 @@ int32_t wrmsr_vmexit_handler(struct acrn_vcpu *vcpu)
 	int32_t err = 0;
 	uint32_t msr;
 	uint64_t v;
+	int32_t pt = 0;
 
 	/* Read the MSR ID */
 	msr = (uint32_t)vcpu_get_gpreg(vcpu, CPU_REG_RCX);
@@ -1177,16 +1219,32 @@ int32_t wrmsr_vmexit_handler(struct acrn_vcpu *vcpu)
 		if (is_x2apic_msr(msr)) {
 			err = vlapic_x2apic_write(vcpu, msr, v);
 		} else {
-			pr_warn("%s(): vm%d vcpu%d writing MSR %lx not supported",
-				__func__, vcpu->vm->vm_id, vcpu->vcpu_id, msr);
-			err = -EACCES;
+			if (msr != 0x122 && msr != 0x10F && msr != 0x123 && (msr < 0xc0001fffU) && msr != 0x66a) {
+				msr_write(msr, v);
+				pt = 1;
+			} else {
+				err = -EACCES;
+			}
 		}
 		break;
 	}
 	}
 
+	if (pt) {
+		pr_fatal("%s(): vm%d vcpu%d writing passthrough MSR %lx, v: 0x%llx",
+				__func__, vcpu->vm->vm_id, vcpu->vcpu_id, msr, v);
+	} 
+	//else {
+	//	pr_fatal("%s(): vm%d vcpu%d writing emulated MSR %lx, v: 0x%llx",
+	//			__func__, vcpu->vm->vm_id, vcpu->vcpu_id, msr, v);
+	//}
+
 	TRACE_2L(TRACE_VMEXIT_WRMSR, msr, v);
 
+	if (err != 0) {
+		pr_err("%s(): vm%d vcpu%d writing MSR %lx not supported",
+				__func__, vcpu->vm->vm_id, vcpu->vcpu_id, msr);
+	}
 	return err;
 }
 

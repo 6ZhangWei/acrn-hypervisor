@@ -361,8 +361,10 @@ int32_t cpuid_vmexit_handler(struct acrn_vcpu *vcpu)
 	rcx = vcpu_get_gpreg(vcpu, CPU_REG_RCX);
 	rdx = vcpu_get_gpreg(vcpu, CPU_REG_RDX);
 	TRACE_2L(TRACE_VMEXIT_CPUID, rax, rcx);
-	guest_cpuid(vcpu, (uint32_t *)&rax, (uint32_t *)&rbx,
+	cpuid_subleaf((uint32_t)rax, (uint32_t)rcx, (uint32_t *)&rax, (uint32_t *)&rbx,
 		(uint32_t *)&rcx, (uint32_t *)&rdx);
+	//guest_cpuid(vcpu, (uint32_t *)&rax, (uint32_t *)&rbx,
+	//	(uint32_t *)&rcx, (uint32_t *)&rdx);
 	vcpu_set_gpreg(vcpu, CPU_REG_RAX, rax);
 	vcpu_set_gpreg(vcpu, CPU_REG_RBX, rbx);
 	vcpu_set_gpreg(vcpu, CPU_REG_RCX, rcx);
