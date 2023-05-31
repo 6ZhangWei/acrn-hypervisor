@@ -354,20 +354,20 @@ static int32_t hlt_vmexit_handler(struct acrn_vcpu *vcpu)
 
 int32_t cpuid_vmexit_handler(struct acrn_vcpu *vcpu)
 {
-	uint64_t rax, rbx, rcx, rdx, aa, cc;
+	uint64_t rax, rbx, rcx, rdx; //aa, cc;
 
 	rax = vcpu_get_gpreg(vcpu, CPU_REG_RAX);
 	rbx = vcpu_get_gpreg(vcpu, CPU_REG_RBX);
 	rcx = vcpu_get_gpreg(vcpu, CPU_REG_RCX);
 	rdx = vcpu_get_gpreg(vcpu, CPU_REG_RDX);
 	TRACE_2L(TRACE_VMEXIT_CPUID, rax, rcx);
-	aa = rax; cc=rcx;
+	// aa = rax; cc=rcx;
 	cpuid_subleaf((uint32_t)rax, (uint32_t)rcx, (uint32_t *)&rax, (uint32_t *)&rbx,
 		(uint32_t *)&rcx, (uint32_t *)&rdx);
 // As noted in Section 13.2, a processor allows software to set XCR0[4:3] to 11b if and only if CPUID.(EAX=0DH,ECX=0):EAX[4:3] = 11b.
-	if(aa==0x0d && cc==0){
-		rax &=0xffffffffffffffe7;
-	}
+	// if(aa==0x0d && cc==0){
+	// 	rax &=0xffffffffffffffe7;
+	// }
 
 	//guest_cpuid(vcpu, (uint32_t *)&rax, (uint32_t *)&rbx,
 	//	(uint32_t *)&rcx, (uint32_t *)&rdx);
@@ -432,10 +432,10 @@ static int32_t xsetbv_vmexit_handler(struct acrn_vcpu *vcpu)
 							write_xcr(0, val64);
 							ret = 0;
 						}//If XCR0[4:3] is 11b, the XSAVE feature set can be used to manage MPX state and software can execute MPX instructions
-						// else if(val64&XCR0_BNDREGS && val64&XCR0_BNDCSR){
- 						// 	write_xcr(0, val64);
- 						// 	ret = 0;
- 						// }
+						else if(val64&XCR0_BNDREGS && val64&XCR0_BNDCSR){
+ 							write_xcr(0, val64);
+ 							ret = 0;
+ 						}
 					}
 				}
 			}
