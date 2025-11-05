@@ -1,0 +1,140 @@
+<?xml version="1.0"?>
+<xs:schema
+    xmlns:xi="http://www.w3.org/2001/XInclude"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:acrn="https://projectacrn.org">
+
+<xi:include href="../types.xsd" xpointer="xpointer(id('root')/*)" />
+<xi:include href="../VMtypes.xsd" xpointer="xpointer(id('root')/*)" />
+
+<!-- RISC-V specific Console UART Configuration -->
+<xs:simpleType name="RiscvConsoleVuartConfiguration">
+  <xs:annotation>
+    <xs:documentation>RISC-V console UART configuration: SBI (RISC-V SBI console) or None (no console).</xs:documentation>
+  </xs:annotation>
+  <xs:restriction base="xs:string">
+    <xs:enumeration value="None"></xs:enumeration>
+    <xs:enumeration value="SBI"></xs:enumeration>
+  </xs:restriction>
+</xs:simpleType>
+
+<!-- Simplified RISC-V Debug Options -->
+<xs:complexType name="DebugOptionsType">
+  <xs:annotation>
+    <xs:documentation>Simplified debug options for RISC-V hypervisor.</xs:documentation>
+  </xs:annotation>
+  <xs:all>
+    <xs:element name="SERIAL_CONSOLE" type="SerialConsoleType" default="None"></xs:element>
+    <xs:element name="CONSOLE_LOGLEVEL" type="LogLevelType" default="5"></xs:element>
+    <xs:element name="MEM_LOGLEVEL" type="LogLevelType" default="5"></xs:element>
+  </xs:all>
+</xs:complexType>
+
+<!-- Simplified RISC-V Feature Options -->
+<xs:complexType name="FeatureOptionsType">
+  <xs:annotation>
+    <xs:documentation>Simplified feature options for RISC-V hypervisor.</xs:documentation>
+  </xs:annotation>
+  <xs:all>
+    <xs:element name="SCHEDULER" type="SchedulerType" default="SCHED_BVT"></xs:element>
+    <xs:element name="ACRNTRACE_ENABLED" type="Boolean" default="y"></xs:element>
+    <xs:element name="RELOC_ENABLED" type="Boolean" default="y"></xs:element>
+    <xs:element name="VUART_TX_BUF_SIZE" default="8192"></xs:element>
+    <xs:element name="VUART_RX_BUF_SIZE" default="256"></xs:element>
+    <xs:element name="VUART_TIMER_PCPU" type="xs:integer" default="0"></xs:element>
+  </xs:all>
+</xs:complexType>
+
+<!-- Simplified RISC-V Memory Options -->
+<xs:complexType name="MemoryOptionsType">
+  <xs:annotation>
+    <xs:documentation>Simplified memory options for RISC-V hypervisor.</xs:documentation>
+  </xs:annotation>
+  <xs:all>
+    <xs:element name="STACK_SIZE" type="HexFormat" default="0x2000"></xs:element>
+    <xs:element name="HV_RAM_START" type="HexFormat" default="0x81000000"></xs:element>
+  </xs:all>
+</xs:complexType>
+
+
+<xs:complexType name="CapacitiesOptionsType">
+  <xs:all>
+    <xs:element name="MAX_VM_NUM" type="xs:integer" default="16"></xs:element>
+    <xs:element name="MAX_PCI_BUS_NUM" type="xs:integer" default="0"></xs:element>
+    <xs:element name="MAX_PCI_DEV_NUM" default="0"></xs:element>
+    <xs:element name="MAX_PT_IRQ_ENTRIES" default="0"></xs:element>
+    <xs:element name="MAX_MSIX_TABLE_NUM" default="0"></xs:element>
+    <xs:element name="MAX_EMULATED_MMIO" default="16">
+      <xs:simpleType>
+        <xs:annotation>
+          <xs:documentation>Integer value from 1 to 128.</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:integer">
+          <xs:minInclusive value="1" />
+          <xs:maxInclusive value="128" />
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:element>
+  </xs:all>
+</xs:complexType>
+
+
+<xs:complexType name="HVConfigType">
+  <xs:all>
+    <xs:element name="BUILD_TYPE" type="BuildType" default="debug"></xs:element>
+    <xs:element name="DEBUG_OPTIONS" type="DebugOptionsType"></xs:element>
+    <xs:element name="FEATURES" type="FeatureOptionsType"></xs:element>
+    <xs:element name="MEMORY" type="MemoryOptionsType"></xs:element>
+    <xs:element name="CAPACITIES" type="CapacitiesOptionsType"></xs:element>
+  </xs:all>
+</xs:complexType>
+
+<xs:complexType name="VMConfigType">
+  <xs:all>
+    <xs:element name="load_order" type="LoadOrderType">
+      <xs:annotation acrn:title="Load order" acrn:views=""></xs:annotation>
+    </xs:element>
+    <xs:element name="name" type="VMNameType">
+    </xs:element>
+    <xs:element name="vm_type" type="VMType" default="STANDARD_VM">
+      <xs:annotation acrn:title="VM type" acrn:views="basic"></xs:annotation>
+    </xs:element>
+    <xs:element name="console_vuart" type="RiscvConsoleVuartConfiguration" default="None">
+      <xs:annotation acrn:title="Console virtual UART type" acrn:views="basic">
+      </xs:annotation>
+    </xs:element>
+    <xs:element name="companion_vmid" type="xs:integer" default="65535"></xs:element>
+    <xs:element name="priority" type="PriorityType"  default="PRIO_LOW"></xs:element>
+    <xs:element name="bvt_warp_value" default="0"></xs:element>
+    <xs:element name="bvt_warp_limit" default="0"></xs:element>
+    <xs:element name="bvt_weight" default="1"></xs:element>
+    <xs:element name="bvt_unwarp_period" default="0"></xs:element>
+  </xs:all>
+  <xs:attribute name="id" type="xs:integer" />
+</xs:complexType>
+
+<xs:complexType name="ACRNConfigType">
+  <xs:all>
+    <xs:element name="hv" type="HVConfigType">
+      <xs:annotation acrn:title="Hypervisor Options">
+      </xs:annotation>
+    </xs:element>
+    <xs:element name="vm" maxOccurs="unbounded">
+      <xs:annotation acrn:title="Virtual Machine Options">
+      </xs:annotation>
+      <xs:alternative test=".//load_order = 'PRE_LAUNCHED_VM'" type="VMConfigType" />
+      <xs:alternative test=".//load_order = 'SERVICE_VM'" type="VMConfigType" />
+    </xs:element>
+  </xs:all>
+  <xs:attribute name="board" type="xs:string" />
+  <xs:attribute name="scenario" type="xs:string" />
+</xs:complexType>
+
+<xs:element name="acrn-config" type="ACRNConfigType">
+  <xs:unique name="vmNameUnique">
+    <xs:selector xpath="vm"/>
+    <xs:field xpath="name"/>
+  </xs:unique>
+</xs:element>
+
+</xs:schema>

@@ -12,6 +12,10 @@ from copy import copy
 from collections import namedtuple
 import re
 
+# Add library path for common utilities
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'library'))
+from acrn_config_utilities import is_riscv_board
+
 try:
     import elementpath
     import elementpath_overlay
@@ -301,9 +305,27 @@ if __name__ == "__main__":
     parser.add_argument("board", nargs="?", type=existing_file_type(parser), help="the board XML file to be validated")
     parser.add_argument("scenario", nargs="?", type=existing_file_type(parser), help="the scenario XML file to be validated")
     parser.add_argument("--loglevel", default="warning", type=log_level_type(parser), help="choose log level, e.g. debug, info, warning or error")
-    parser.add_argument("--schema", default=os.path.join(schema_dir, "config.xsd"), help="the XML schema that defines the syntax of scenario XMLs")
-    parser.add_argument("--datachecks", default=os.path.join(schema_dir, "datachecks.xsd"), help="the XML schema that defines the semantic rules against board and scenario data")
+    parser.add_argument("--schema", help="the XML schema that defines the syntax of scenario XMLs")
+    parser.add_argument("--datachecks", help="the XML schema that defines the semantic rules against board and scenario data")
     args = parser.parse_args()
+
+    # Auto-determine schema if not explicitly provided
+    if not args.schema:
+        if args.board and is_riscv_board(args.board):
+            args.schema = os.path.join(schema_dir, "riscv", "config.xsd")
+            print("Validator: Detected RISC-V board, using RISC-V schema.")
+        else:
+            args.schema = os.path.join(schema_dir, "config.xsd")
+            print("Validator: Using x86 schema.")
+    
+    # Auto-determine datachecks if not explicitly provided
+    if not args.datachecks:
+        if args.board and is_riscv_board(args.board):
+            args.datachecks = os.path.join(schema_dir, "riscv", "datachecks.xsd")
+            print("Validator: Using RISC-V datachecks.")
+        else:
+            args.datachecks = os.path.join(schema_dir, "datachecks.xsd")
+            print("Validator: Using x86 datachecks.")
 
     logging.basicConfig(level=args.loglevel.upper())
     main(args)

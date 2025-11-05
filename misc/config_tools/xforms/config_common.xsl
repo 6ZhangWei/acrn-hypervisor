@@ -268,12 +268,21 @@
 	  <xsl:with-param name="key" select="'SERIAL_MMIO'" />
 	  <xsl:with-param name="value" select="'y'" />
 	</xsl:call-template>
-	<xsl:if test="$base != ''">
-	  <xsl:call-template name="integer-by-key-value">
-	    <xsl:with-param name="key" select="'SERIAL_MMIO_BASE'" />
-	    <xsl:with-param name="value" select="$base" />
-	  </xsl:call-template>
-	</xsl:if>
+	<xsl:choose>
+	  <xsl:when test="$base != ''">
+	    <xsl:call-template name="integer-by-key-value">
+	      <xsl:with-param name="key" select="'SERIAL_MMIO_BASE'" />
+	      <xsl:with-param name="value" select="$base" />
+	    </xsl:call-template>
+	  </xsl:when>
+	  <!-- Hard-coded RISC-V QEMU virt platform serial MMIO base address -->
+	  <xsl:when test="//board-data/acrn-config[@board='qemu-riscv']">
+	    <xsl:call-template name="integer-by-key-value">
+	      <xsl:with-param name="key" select="'SERIAL_MMIO_BASE'" />
+	      <xsl:with-param name="value" select="'0x10000000'" />
+	    </xsl:call-template>
+	  </xsl:when>
+	</xsl:choose>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:template>

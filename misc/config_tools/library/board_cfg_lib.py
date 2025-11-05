@@ -255,6 +255,62 @@ def get_processor_info():
 
     return tmp_list
 
+def get_riscv_processor_info():
+    """
+    Get RISC-V cpu processor list from Device Tree information
+    :return: cpu processor list containing hart IDs
+    """
+    processor_list = []
+    
+    try:
+        # Read the board info file directly since DEVICE_TREE_INFO contains CDATA
+        # which the get_info function cannot handle properly
+        with open(acrn_config_utilities.BOARD_INFO_FILE, 'r') as f:
+            content = f.read()
+        
+        import re
+        
+        # Extract device tree content between DEVICE_TREE_INFO CDATA tags
+        match = re.search(r'<DEVICE_TREE_INFO><!\[CDATA\[(.*?)\]\]></DEVICE_TREE_INFO>', 
+                         content, re.DOTALL)
+        
+        if not match:
+            key = "RISC-V DEVICE_TREE_INFO error:"
+            ERR_LIST[key] = "Device Tree information is not available"
+            return processor_list
+        
+        device_tree_content = match.group(1)
+        
+        # Find all cpu@ entries with their hart IDs
+        cpu_matches = re.findall(r'cpu@(\w+)', device_tree_content)
+        
+        # Convert hart IDs and add to processor list
+        for hart_id in cpu_matches:
+            try:
+                # Hart ID in device tree is typically decimal
+                hart_id_int = int(hart_id, 10)
+                # Add to processor list as string (consistent with x86 version)
+                processor_list.append(str(hart_id_int))
+            except ValueError:
+                # If parsing fails, use the original string
+                processor_list.append(hart_id)
+        
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_processors = []
+        for hart_id in processor_list:
+            if hart_id not in seen:
+                unique_processors.append(hart_id)
+                seen.add(hart_id)
+        
+        processor_list = unique_processors
+        
+    except Exception as e:
+        key = "RISC-V processor parsing error:"
+        ERR_LIST[key] = str(e)
+        return []
+    
+    return processor_list
 
 def get_native_ttys_info(board_info):
     """
@@ -463,7 +519,7 @@ def parser_pci():
     bar_addr = bar_num = '0'
     cal_sub_pci_name = []
 
-    pci_lines = get_info(acrn_config_utilities.BOARD_INFO_FILE, "<PCI_DEVICE>", "</PCI_DEVICE>")
+    pci_lines = get_info(acrn_config_utilities.BOARD_INFO_FILE, "<PCI_DEVICE>", "</PCI_DEVICE>") or []
 
     for line in pci_lines:
         tmp_bar_mem = Bar_Mem()

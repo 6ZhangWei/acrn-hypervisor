@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<xs:schema
+    xmlns:xi="http://www.w3.org/2003/XInclude"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:element name="acrn-config">
+    <xs:complexType>
+      <xs:sequence>
+	<xs:any processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:anyAttribute processContents="skip"/>
+      <!-- Include only RISC-V relevant checks, excluding x86-specific ones like RDT -->
+      <xi:include href="../checks/vm_types.xsd" xpointer="xpointer(id('root')/*)" />
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

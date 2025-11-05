@@ -8,7 +8,7 @@
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'library'))
 import acrn_config_utilities, board_cfg_lib
-from acrn_config_utilities import get_node
+from acrn_config_utilities import get_node, is_riscv_board
 
 def sos_cpu_affinity(etree):
     if get_node("//vm[load_order = 'SERVICE_VM']", etree) is None:
@@ -16,8 +16,10 @@ def sos_cpu_affinity(etree):
 
     if get_node("//vm[load_order = 'SERVICE_VM' and count(cpu_affinity//pcpu_id)]", etree) is not None:
         return None
-
-    sos_extend_all_cpus = board_cfg_lib.get_processor_info()
+    if is_riscv_board(acrn_config_utilities.BOARD_INFO_FILE):
+        sos_extend_all_cpus = board_cfg_lib.get_riscv_processor_info()
+    else:
+        sos_extend_all_cpus = board_cfg_lib.get_processor_info()
     pre_all_cpus = etree.xpath("//vm[load_order = 'PRE_LAUNCHED_VM']/cpu_affinity//pcpu_id/text()")
 
     cpus_for_sos = list(set(sos_extend_all_cpus) - set(pre_all_cpus))

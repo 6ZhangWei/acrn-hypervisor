@@ -868,6 +868,10 @@ def main(args):
     allocation_etree = parse(os.path.join(os.path.dirname(board), "configs", "allocation.xml"))
     board_type = board_root.attrib['board']
     scenario_name = scenario_root.attrib['scenario']
+
+    if acrn_config_utilities.is_riscv_board(board):
+        print(f"RISC-V board detected ({board_type}). Skipping ACPI ASL generation as RISC-V uses Device Tree instead of ACPI.")
+        return err_dic
     pcpu_list = board_root.find('CPU_PROCESSOR_INFO').text.strip().split(',')
     if isinstance(pcpu_list, list):
         pcpu_list = [x.strip() for x in pcpu_list]

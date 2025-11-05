@@ -277,6 +277,48 @@ def get_config_root(config_file):
     return root
 
 
+def get_board_arch(config_file):
+    """
+    Get the architecture type from board or scenario config file
+    :param config_file: board XML file or scenario XML file path
+    :return: architecture string ('riscv', 'x86', or None if not specified)
+    """
+    try:
+        root = get_config_root(config_file)
+
+        # Check for arch attribute in root element
+        arch = root.get('arch')
+        if arch:
+            return arch.lower()
+
+        # Default to x86 if no arch specified (backward compatibility)
+        return 'x86'
+
+    except Exception as e:
+        print(f"Warning: Failed to determine architecture from {config_file}: {e}")
+        return None
+
+
+def is_riscv_board(config_file):
+    """
+    Check if the board/scenario is RISC-V architecture
+    :param config_file: board XML file or scenario XML file path
+    :return: True if RISC-V, False otherwise
+    """
+    arch = get_board_arch(config_file)
+    return arch == 'riscv'
+
+
+def is_x86_board(config_file):
+    """
+    Check if the board/scenario is x86 architecture
+    :param config_file: board XML file or scenario XML file path
+    :return: True if x86, False otherwise
+    """
+    arch = get_board_arch(config_file)
+    return arch == 'x86'
+
+
 def get_vm_num(config_file):
     """
     Get vm number

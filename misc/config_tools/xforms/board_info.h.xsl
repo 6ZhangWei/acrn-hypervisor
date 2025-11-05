@@ -61,7 +61,14 @@
   </xsl:template>
 
   <xsl:template name="MAX_PCPU_NUM">
-    <xsl:value-of select="acrn:define('MAX_PCPU_NUM', count(//processors//thread), 'U')" />
+    <xsl:variable name="cpu_count" select="count(//processors//thread)" />
+    <xsl:variable name="min_cpu_count">
+      <xsl:choose>
+        <xsl:when test="$cpu_count &lt; 4">4</xsl:when>
+        <xsl:otherwise><xsl:value-of select="$cpu_count" /></xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+    <xsl:value-of select="acrn:define('MAX_PCPU_NUM', $min_cpu_count, 'U')" />
   </xsl:template>
 
   <xsl:template name="MAX_VMSIX_ON_MSI_PDEVS_NUM">

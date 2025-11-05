@@ -25,7 +25,9 @@ def find_hi_mmio_window(config):
 def generate_file(config):
     # get cpu processor list
     cpu_list = board_cfg_lib.get_processor_info()
-    max_cpu_num = len(cpu_list)
+    max_cpu_num = 4
+    print("write the max_cpu_num is 4")
+    # max_cpu_num = len(cpu_list)
 
     # start to generate board_info.h
     print("{0}".format(board_cfg_lib.HEADER_LICENSE), file=config)

@@ -82,6 +82,8 @@ def get_serial_console(config):
         print("CONFIG_SERIAL_MMIO=y", file=config)
         if serial_value:
             print('CONFIG_SERIAL_MMIO_BASE={}'.format(serial_value), file=config)
+        else:
+            print('CONFIG_SERIAL_MMIO_BASE=0x10000000', file=config)
 
 def get_features(hv_info, config):
 

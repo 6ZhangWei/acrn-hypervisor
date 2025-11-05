@@ -26,6 +26,17 @@ def main(args):
     board_etree = parse(args.board)
     scenario_etree = parse(args.scenario)
     allocation_etree = lxml.etree.ElementTree(element=fromstring("<acrn-config></acrn-config>"))
+    print("static allocation INFO: ", args.board)
+    # Check if this is a RISC-V board
+    if acrn_config_utilities.is_riscv_board(args.board):
+        print("static allocation INFO: Detected RISC-V architecture board configuration")
+        for script in ["guest_flags.py", "cpu_affinity.py"]:
+            module_name = os.path.splitext(script)[0]
+            module = import_module(f"{module_name}")
+            module.fn(board_etree, scenario_etree, allocation_etree)
+        allocation_etree.write(args.output, pretty_print=True)
+        return
+
     for script in sorted([f for f in os.listdir(scripts_path) if f.endswith(".py") and f != current]):
         module_name = os.path.splitext(script)[0]
         module = import_module(f"{module_name}")

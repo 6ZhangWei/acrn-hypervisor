@@ -75,17 +75,17 @@ def main(args):
     config_pci = board_fix_dir + GEN_FILE[0]
     config_board = board_fix_dir + GEN_FILE[1]
     config_acpi =  board_fix_dir + GEN_FILE[2]
-    config_board_h =  board_fix_dir + GEN_FILE[4]
+    # config_board_h =  board_fix_dir + GEN_FILE[3]
 
     # generate pci_devices.h
     with open(config_pci, 'w+') as config:
         pci_devices_h.generate_file(config)
 
     # generate board_info.h
-    with open(config_board_h, 'w+') as config:
-        err_dic = board_info_h.generate_file(config)
-        if err_dic:
-            return err_dic
+    # with open(config_board_h, 'w+') as config:
+    #     err_dic = board_info_h.generate_file(config)
+    #     if err_dic:
+    #         return err_dic
 
     # generate board.c
     with open(config_board, 'w+') as config:

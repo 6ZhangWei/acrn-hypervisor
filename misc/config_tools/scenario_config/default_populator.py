@@ -6,8 +6,13 @@
 #
 
 import os
+import sys
 import argparse
 import elementpath
+
+# Add library path for common utilities
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'library'))
+from acrn_config_utilities import is_riscv_board
 
 from scenario_transformer import ScenarioTransformer
 
@@ -96,7 +101,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Populate a given scenario XML with default values of nonexistent nodes")
     parser.add_argument("scenario", help="Path to the scenario XML file from users")
     parser.add_argument("out", nargs="?", default="out.xml", help="Path where the output is placed")
-    parser.add_argument("--schema", default=os.path.join(schema_dir, "config.xsd"), help="the XML schema that defines the syntax of scenario XMLs")
+    parser.add_argument("--schema", help="the XML schema that defines the syntax of scenario XMLs")
+    parser.add_argument("--board", help="Path to the board XML file to detect architecture")
     args = parser.parse_args()
+
+    # Auto-determine schema if not explicitly provided
+    if not args.schema:
+        if args.board and is_riscv_board(args.board):
+            args.schema = os.path.join(schema_dir, "riscv", "config.xsd")
+            print("Default Populator: Detected RISC-V board, using RISC-V schema.")
+        else:
+            args.schema = os.path.join(schema_dir, "config.xsd")
+            print("Default Populator: Using x86 schema.")
 
     main(args)
